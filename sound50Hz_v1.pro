@@ -787,19 +787,22 @@ END
 PRO gfunct, X, A, F, pder
 
 a0=a(0)	; offset
-a1=a(1)	; amplitude of sin 
-a2=a(2)	; period of sin and cos
-a3=a(3)	; amplitude of cos
+a1=a(1)	; amplitude of sin 1
+a2=a(2)	; period of sin 1
+a3=a(3)	; phase of sin 1
+a4=a(4)	; amplitude of sin 2
+a5=a(5)	; period of sin 2
+a6=a(6)	; phase of sin 2
 
 	twopix=2.0d0*!dpi*x
-  F = a0 + a1*sin(twopix/a2) + a3*cos(twopix/a2)
+  F = a0 + a1*sin(twopix/a2+a3) + a4*sin(twopix/a5+a6)
 
 ;If the procedure is called with four parameters, calculate the
 
 ;partial derivatives.
 
   IF N_PARAMS() GE 4 THEN $
-stop
+
     pder = [ [replicate(1.0, N_ELEMENTS(X))], [sin(twopix/a2+a3)],[-twopix*a1*cos(twopix/a2+a3)/a2*2], [a1*cos(twopix/a2+a3)]]
 
 END
@@ -818,13 +821,13 @@ weights = s1*0.0+1.0
 ;Compute the parameters.
 fmt_str2='(a,7(1x,f10.5))'
 if (file_exist('lastfit') ne 1) then begin
-a=[0.0d0,300.0d0,0.02d0,0.0d0]
+a=[0.0d0,300.0d0,0.02d0,0.0d0,00.0d0,0.02d0,0.0d0]
 endif else begin
 a=get_data('lastfit')
 a(1)=300.0d0
 a(2)=0.02d0
 endelse
-FITA=[1,1,1,1]
+FITA=[1,1,1,1,0,0,0]
 yfit = CURVEFIT(t, s1,/double, weights, A, FITA=FITA, SIGMA, FUNCTION_NAME='gfunct',status=stat,tol=1e-6,itmax=1000,/NODERIVATIVE)
 residuals=(s1-yfit)
 print,'RMSE: ',sqrt(mean(residuals^2))

@@ -69,10 +69,7 @@ FUNCTION get_data,filename
  off=reform(data(1,*))
  a1=reform(data(2,*))
  p1=reform(data(3,*))
- ph1=reform(data(4,*))
- a2=reform(data(5,*))
- p2=reform(data(6,*))
- ph2=reform(data(7,*))
+ a2=reform(data(4,*))
  
  caldat,jd,mm,dd,yy,hr,mi,se
  hours=hr+mi/60.+se/3600.0
