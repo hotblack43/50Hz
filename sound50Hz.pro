@@ -1,3 +1,12 @@
+PRO getspectrum,duration,x,y,power,periods,f
+n=n_elements(x)
+z=fft(y,/double,-1)
+zz=z*conj(z)
+power=float(zz)
+f=findgen(n)/duration
+periods=1./f
+return
+end
 
 ;+
 ; NAME:
@@ -787,12 +796,16 @@ END
 PRO gfunct, X, A, F, pder
 
 a0=a(0)	; offset
-a1=a(1)	; amplitude of sin 
-a2=a(2)	; period of sin and cos
-a3=a(3)	; amplitude of cos
+a1=a(1)	; amplitude of sin 1
+a2=a(2)	; period of sin and cos 1
+a3=a(3)	; amplitude of cos 1
+a4=a(4)	; amplitude of sin 2
+a5=a(5)	; period of sin and cos 2
+a6=a(6)	; amplitude of cos 2
 
 	twopix=2.0d0*!dpi*x
-  F = a0 + a1*sin(twopix/a2) + a3*cos(twopix/a2)
+  F = a0 + a1*sin(twopix/a2) + a3*cos(twopix/a2) + $
+           a4*sin(twopix/a5) + a6*cos(twopix/a5)
 
 ;If the procedure is called with four parameters, calculate the
 
@@ -816,26 +829,45 @@ weights = s1*0.0+1.0
 ;Provide an initial guess of the function’s parameters.
 
 ;Compute the parameters.
-fmt_str2='(a,7(1x,f10.5))'
+fmt_str2='(a,7(1x,f14.7))'
 if (file_exist('lastfit') ne 1) then begin
-a=[0.0d0,300.0d0,0.02d0,0.0d0]
+a=[0.0d0,300.0d0,0.01d0,0.0d0,300.0d0,0.02d0,0.0d0]
 endif else begin
 a=get_data('lastfit')
-a(1)=300.0d0
-a(2)=0.02d0
+a(1)=1300.0d0
+a(3)=130.0d0
+a(2)=0.01d0	; period 1  in s
+a(5)=0.02d0	; period 2  in s
 endelse
-FITA=[1,1,1,1]
-yfit = CURVEFIT(t, s1,/double, weights, A, FITA=FITA, SIGMA, FUNCTION_NAME='gfunct',status=stat,tol=1e-6,itmax=1000,/NODERIVATIVE)
+FITA=[1,1,1,1,1,1,1]
+yfit = CURVEFIT(t, s1,/double, weights, A, FITA=FITA, SIGMA, FUNCTION_NAME='gfunct',status=stat,tol=1e-7,itmax=1000,/NODERIVATIVE)
 residuals=(s1-yfit)
 print,'RMSE: ',sqrt(mean(residuals^2))
 print,'Status: ',stat
-print,format=fmt_str2,'a: ',a
+;print,format=fmt_str2,'a: ',a
+amplitude1=sqrt(a(1)^2+a(3)^2)
+amplitude2=sqrt(a(4)^2+a(6)^2)
+phase1=atan(a(3),a(1))/!dtor/360.
+phase2=atan(a(6),a(4))/!dtor/360.
+print,'Amplitudes: ',amplitude1,amplitude2
+print,'Periods   : ',a(2),a(5)
+print,'Phases, d : ',phase1,phase2,phase2-phase1
+print,'========================================================'
 fitted_f=a(2)
-plot,t(0:n/2),s1(0:n/2),xstyle=3,ytitle='Signal and fit'
-oplot,t(0:n/2),yfit(0:n/2),color=fsc_color('red')
-plot,t,s1-yfit,ytitle='Residuals'
-oplot,t,smooth(s1-yfit,111),color=fsc_color('green')
+nn=16
+xran=findgen(n)
+kdx=where(xran lt 1./15.*float(n) or xran gt 14./15.*float(n))
+plot,s1(kdx),xstyle=3,ytitle='Signal and fit'
+oplot,yfit(kdx),color=fsc_color('red')
+;plot,s1(kdx)-yfit(kdx),ytitle='Residuals',xstyle=3
+;oplot,smooth(s1(kdx)-yfit(kdx),111),color=fsc_color('green')
 fitted_amp=a(1)
+; plot the FFT
+getspectrum,duration,t,s1,power,periods,frequency
+plot_io,frequency,power,xrange=[10,250],xtitle='frequency [Hz]',ytitle='Power',xstyle=3,title='Residuals spectrum'
+getspectrum,duration,t,s1-yfit,power,periods,frequency
+oplot,frequency,power,color=fsc_color('green')
+;plot_oo,periods,power,xrange=[1./1000.,1.],xtitle='Period [s]',ytitle='Power'
 openw,42,'lastfit'
 printf,42,format='(20(1x,f20.10))',a
 close,42
@@ -1193,7 +1225,7 @@ iflag=888
 ; line to use for some other Linux machines - with the external USB card:
 ; Use audacity so see the hw number
 ;        spawn,'arecord -D plughw:0 --duration=4 -f cd test1.wav'
-         spawn,'arecord -D plughw:1 --duration=1 -f cd test1.wav'
+         spawn,'arecord -D plughw:1 --duration=4 -f cd test1.wav'
 ;        spawn,'arecord -D plughw:0 --rate=4000 --duration=4  test4.wav'
          sound=read_wav('test1.wav',rate)
          s=sound
@@ -1206,7 +1238,7 @@ endif
 	 get_fit,s,rate,f1,pwr1,fitted_f,fitted_amp,a
 openw,23,'grid_f_newformat.dat',/append
 	printf,23,format='(f15.7,7(1x,f15.9))',systime(/julian),a
-	print,format='(f15.7,7(1x,f15.9))',systime(/julian),a
+;print,format='(f15.7,7(1x,f15.9))',systime(/julian),a
 close,23
 endwhile
 end

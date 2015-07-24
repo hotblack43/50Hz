@@ -66,15 +66,13 @@ FUNCTION get_data,filename
  n=n_elements(data(0,*))
  print,'n: ',n
  jd=reform(data(0,*))
- off=reform(data(1,*))
- a1=reform(data(2,*))
  p1=reform(data(3,*))
- a2=reform(data(4,*))
+ p2=reform(data(6,*))
  
  caldat,jd,mm,dd,yy,hr,mi,se
  hours=hr+mi/60.+se/3600.0
- idx=where(abs(1./p1-50) lt 0.4)
- plot,xstyle=3,ytitle='f!d50!n [Hz]',hours,1./p1(idx),ystyle=3,psym=-1,xtitle='Hours since last noon'
+ idx=where(abs(1./p2-50) lt 0.4)
+ plot,xstyle=3,ytitle='f!d50!n [Hz]',hours,1./p2(idx),ystyle=3,psym=-1,xtitle='Hours since last noon'
  oplot,[!X.crange],[50,50],linestyle=1
  ;
  alljd=long(jd(sort(jd)))
@@ -82,11 +80,11 @@ FUNCTION get_data,filename
  nall=n_elements(alljd)
  for iall=0,nall-1,1 do begin
      print,iall,alljd(iall)
-     idx=where(long(jd) eq alljd(iall) and abs(1./p1-50) le 0.2)
-     if (iall eq 0) then plot,xrange=[0,24],ystyle=3,xstyle=3,xtitle='Hours since last noon',yrange=[49.7,50+0.2*nall],24.*(jd(idx)-alljd(iall)),1./p1(idx)
-     if (iall gt 0) then oplot,24.*(jd(idx)-alljd(iall)),1./p1(idx)+0.2*iall
+     idx=where(long(jd) eq alljd(iall) and abs(1./p2-50) le 0.2)
+     if (iall eq 0) then plot,xrange=[0,24],ystyle=3,xstyle=3,xtitle='Hours since last noon',yrange=[49.7,50+0.2*nall],24.*(jd(idx)-alljd(iall)),1./p2(idx)
+     if (iall gt 0) then oplot,24.*(jd(idx)-alljd(iall)),1./p2(idx)+0.2*iall
      oplot,[!x.crange],[50+0.2*iall,50+0.2*iall],linestyle=1
      endfor
- oplot,24.*(jd(idx)-alljd(iall-1)),1./p1(idx)+0.2*(iall-1),color=fsc_color('green')
+ oplot,24.*(jd(idx)-alljd(iall-1)),1./p2(idx)+0.2*(iall-1),color=fsc_color('green')
  for k=1,23,1 do oplot,[k,k],[!Y.crange],linestyle=2
  end
