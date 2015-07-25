@@ -1,21 +1,3 @@
-PRO decideiflightning,time,sound
-	 s1=double(reform(sound(0,*)))
-	 s2=double(reform(sound(1,*)))
-	 s=sqrt(s1*s1+s2*s2)
-	sd=robust_sigma(s)
-	nlim=10
-	filename=strcompress('OUT/blixt_'+string(time,format='(f17.9)')+'.dat',/remove_all)
-	if (max(s)-min(s) gt nlim*sd) then begin
-	openw,22,filename
- print,format='(a,1x,f17.9,1x,f8.3)','Detected lightning-like venet: ',time,max(s)-min(s)
-	for k=0,n_elements(s)-1,1 do begin
-	printf,22,s(k)
-	endfor
-	close,22
-	endif
-return
-end
-
 PRO getspectrum,duration,x,y,power,periods,f
 n=n_elements(x)
 z=fft(y,/double,-1)
@@ -1223,13 +1205,10 @@ PRO findlargestincrease,f,normedpower,fmost
  MESSAGE, 'Cannot open (or read)' + file
  RETURN, 0
  END
-
-
-;========================================================== 
-; Version 3 of code that listen to 50Hz line-noise.
-; Versions 1 and 2 did just that, Version 3 also listens
-; out for lightning
-;========================================================== 
+;
+; $Id: curvefit.pro,v 1.2 90/04/04 18:18:34 wave Exp $
+;
+ 
 ifplot=1
 common flags,iflag,a_mem
 iflag=888
@@ -1241,15 +1220,12 @@ iflag=888
  ik=0
  !P.MULTI=[0,1,2]
  while (1) do begin	
-	t1=systime(/julian)
 ; line to use for Raspberry Pi:
 ;        spawn,'arecord -D plughw:1 --duration=1 -f cd test1.wav'
 ; line to use for some other Linux machines - with the external USB card:
 ; Use audacity so see the hw number
 ;        spawn,'arecord -D plughw:0 --duration=4 -f cd test1.wav'
          spawn,'arecord -D plughw:1 --duration=4 -f cd test1.wav'
-	t2=systime(/julian)
-	t=(t1+t2)/2.0
 ;        spawn,'arecord -D plughw:0 --rate=4000 --duration=4  test4.wav'
          sound=read_wav('test1.wav',rate)
          s=sound
@@ -1261,8 +1237,8 @@ endif
          s=median(s,7)
 	 get_fit,s,rate,f1,pwr1,fitted_f,fitted_amp,a
 openw,23,'grid_f_newformat.dat',/append
-	printf,23,format='(f15.7,7(1x,f15.9))',t,a
-         decideiflightning,t,sound
+	printf,23,format='(f15.7,7(1x,f15.9))',systime(/julian),a
+;print,format='(f15.7,7(1x,f15.9))',systime(/julian),a
 close,23
 endwhile
 end
