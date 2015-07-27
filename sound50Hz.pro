@@ -1,4 +1,4 @@
-PRO decideiflightning,time,sound
+PRO decideiflightning,time,sound,s1,s2
 	 s1=double(reform(sound(0,*)))
 	 s2=double(reform(sound(1,*)))
 	 s=sqrt(s1*s1+s2*s2)
@@ -8,8 +8,8 @@ PRO decideiflightning,time,sound
 	if (max(s)-min(s) gt nlim*sd) then begin
 	openw,22,filename
  print,format='(a,1x,f17.9,1x,f8.3)','Detected lightning-like venet: ',time,max(s)-min(s)
-	for k=0,n_elements(s)-1,1 do begin
-	printf,22,s(k)
+	for k=0L,n_elements(s)-1,1 do begin
+	printf,22,format='(3(1x,f15.8))',s(k),s1(k),s2(k)
 	endfor
 	close,22
 	endif
@@ -875,16 +875,16 @@ fitted_f=a(2)
 nn=16
 xran=findgen(n)
 kdx=where(xran lt 1./15.*float(n) or xran gt 14./15.*float(n))
-plot,s1(kdx),xstyle=3,ytitle='Signal and fit'
+plot,s1(kdx),xstyle=3,ytitle='Signal and fit',psym=3
 oplot,yfit(kdx),color=fsc_color('red')
 ;plot,s1(kdx)-yfit(kdx),ytitle='Residuals',xstyle=3
 ;oplot,smooth(s1(kdx)-yfit(kdx),111),color=fsc_color('green')
 fitted_amp=a(1)
 ; plot the FFT
-getspectrum,duration,t,s1,power,periods,frequency
-plot_io,frequency,power,xrange=[10,250],xtitle='frequency [Hz]',ytitle='Power',xstyle=3,title='Residuals spectrum'
-getspectrum,duration,t,s1-yfit,power,periods,frequency
-oplot,frequency,power,color=fsc_color('green')
+;getspectrum,duration,t,s1,power,periods,frequency
+;plot_io,frequency,power,xrange=[10,250],xtitle='frequency [Hz]',ytitle='Power',xstyle=3,title='Residuals spectrum'
+;getspectrum,duration,t,s1-yfit,power,periods,frequency
+;oplot,frequency,power,color=fsc_color('green')
 ;plot_oo,periods,power,xrange=[1./1000.,1.],xtitle='Period [s]',ytitle='Power'
 openw,42,'lastfit'
 printf,42,format='(20(1x,f20.10))',a
@@ -916,29 +916,7 @@ end
 ; derfor en sikkerhedskopi.
 ;------------------------------------------------
 ;
-PRO gosavedataforaplot,title,xtitle,ytitle,x,y,xlo,xhi,filename
-; will save data ofr GNUplotprocessing
-openw,48,filename
-printf,48,title
-printf,48,xtitle 
-printf,48,ytitle
-printf,48,xlo
-printf,48,xhi
-for k=0,n_elements(x)-1,1 do begin
-printf,48,x(k),y(k)
-endfor
-close,48
-return
-end
 
-PRO findlargestincrease,f,normedpower,fmost 
- n=n_elements(f)
- idx=where(normedpower(0:n/2-1) eq max(normedpower(0:n/2-1)))
- fmost=f(idx(0))
- pmost=normedpower(idx(0))
- print,'Max power increase is: ',pmost,' times history'
- return
- end
  
  ; $Id: hanning.pro,v 1.12 2001/08/01 21:14:04 chris Exp $
  ;
@@ -1239,7 +1217,8 @@ iflag=888
 !X.THICK=3
 !Y.THICK=3
  ik=0
- !P.MULTI=[0,1,2]
+ !P.MULTI=[0,1,1]
+ ;!P.MULTI=[0,1,2]
  while (1) do begin	
 	t1=systime(/julian)
 ; line to use for Raspberry Pi:
@@ -1247,13 +1226,15 @@ iflag=888
 ; line to use for some other Linux machines - with the external USB card:
 ; Use audacity so see the hw number
 ;        spawn,'arecord -D plughw:0 --duration=4 -f cd test1.wav'
-         spawn,'arecord -D plughw:1 --duration=4 -f cd test1.wav'
+;        spawn,'arecord -D plughw:1 --duration=4 -f cd test1.wav'
+; higher rate still 16 bit
+         spawn,'arecord -D plughw:1 -f cd --rate=96000 --duration=4 test1.wav'
 	t2=systime(/julian)
 	t=(t1+t2)/2.0
 ;        spawn,'arecord -D plughw:0 --rate=4000 --duration=4  test4.wav'
          sound=read_wav('test1.wav',rate)
          s=sound
-if (rate eq 44100) then begin
+if (rate ge 44100) then begin
 	 s1=double(reform(sound(0,*)))
 	 s2=double(reform(sound(1,*)))
 	 s=sqrt(s1*s1+s2*s2)
@@ -1262,7 +1243,10 @@ endif
 	 get_fit,s,rate,f1,pwr1,fitted_f,fitted_amp,a
 openw,23,'grid_f_newformat.dat',/append
 	printf,23,format='(f15.7,7(1x,f15.9))',t,a
-         decideiflightning,t,sound
+         decideiflightning,t,sound,s1,s2
+	openw,88,'rate.txt'
+	printf,88,rate
+	close,88
 close,23
 endwhile
 end
